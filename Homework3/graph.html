@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Homework Simulation</title>
+        <style>
+            body{
+                background-color: #D5E4D9;
+                color: #000;
+            }
+            .histogram {
+                float: left;
+                margin-left: 20px;
+                margin-top: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .bar {
+                display: flex;
+                align-items: center;
+                margin-bottom: 5px;
+                margin-right: 20px;
+            }
+            .bar-text {
+                margin-right: 10px;
+                color: #0000;
+            }
+            .bar-fill {
+                background-color: #f4a742;
+                height: 20px;
+                text-align: center;
+                line-height: 20px;
+                color: black;
+            }
+            .informations {
+                display: flex;
+                flex-direction: column;
+            }
+            .newline {
+                clear: both;
+            }
+            .graph {
+                background-color: #454545;
+                border: 1px solid #000;
+                float: left; 
+                width: 100%; 
+                height: 800px;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>Homework Simulation</h2>
+        <div>
+            <label for="attackerNumber">Number of Attackers to simulate: </label>
+            <input type="number" id="attackerNumber" value="2" min="1" max ="20">
+            <label for="lambdaValue">Value of the parameter Lambda: </label>
+            <input type="number" id="lambdaValue" value="1" min="1" max ="20">
+            <button onclick="runSimulation()">Simulate</button>
+        </div>
+
+        <canvas id="graph" class="graph"></canvas>
+        <div id="histogram" class="histogram"></div>
+        <div class="newline"></div>
+        <p id="Avg"></p>
+        <p id="Var"></p>
+        <script>
+
+                const graph = document.getElementById('graph');
+
+                let minimumGraphLines = 5
+
+                let punishedAvg = 0;
+                let normalizedAvg = 0;
+
+                let punishedVar = 0;
+                let normalizedVar = 0;
+
+                //Using the "ricursive" functions, better to change this so a cycle at the end of it maybe
+                function calculateAverage(currentAvg, currentVar, count, newValue) {
+                    const delta = newValue - currentAvg;
+                    const newAvg = currentAvg + delta / count;
+                    const newVar = currentVar + delta * (newValue - newAvg);
+                    return { avg: newAvg, variance: newVar };
+                }
+
+                //Run before simulation to make sure that the graphs are empty
+                //maybe it's better to make the function take the graph that
+                //it needs to be cleared as argument so it can be called
+                //indipendently for each graph if it is necessary
+                function clearContext(){
+
+                    context = graph.getContext('2d');
+                    context.clearRect(0, 0, graph.width, graph.height);
+
+                }
+
+                function drawGrid(graph, currentAttempt, maxSuccess) {
+                    if(currentAttempt < minimumGraphLines)
+                    {
+                        const jumpWidth = graph.width / minimumGraphLines;
+                    }else{
+                        const jumpWidth = graph.width / currentAttempt;
+                    }
+                    if(maxSuccess < minimumGraphLines){
+                        const jumpHeight = graph.height / minimumGraphLines;
+                    }else{ 
+                        const jumpHeight = graph.height / maxSuccess;
+                    }
+                    const context = graph.getContext('2d');
+                    context.strokeStyle = '#cccccc';
+                    for (let i = 1; i <= currentAttempt; i++) {
+                        context.beginPath();
+                        context.moveTo(i * jumpWidth, 0);
+                        context.lineTo(i * jumpWidth, graph.height);
+                        context.lineWidth = 1;
+                        context.stroke();
+                    }
+
+                    for (let i = 1; i <= maxSuccess; i++) {
+                        context.beginPath();
+                        context.moveTo(0, i * jumpHeight);
+                        context.lineTo(graph.width, i * jumpHeight);
+                        context.stroke();
+                    }
+                }
+/*
+                function drawLine(x1, y1, x2, y2, color = 'black') {
+                    context.strokeStyle = color;
+                    context.beginPath();
+                    context.moveTo(x1, y1);
+                    context.lineTo(x2, y2);
+                    context.lineWidth = 1;
+                    context.stroke();
+                }
+
+                function getRandomColor() {
+                const letters = '0123456789ABCDEF';
+                let color = '#';
+                for (let i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
+                }
+*/              
+  
+                function runSimulation(){
+                    drawGrid(graph, 1, 5);
+                }
+                
+                runSimulation();
+
+        </script>
+
+    </body>
+</html>
