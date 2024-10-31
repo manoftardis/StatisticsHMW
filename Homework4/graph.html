@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Homework Simulation</title>
+        <style>
+            body{
+                background-color: #D5E4D9;
+                color: #000;
+            }
+            .histogram {
+                float: left;
+                margin-left: 20px;
+                margin-top: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .bar {
+                display: flex;
+                align-items: center;
+                margin-bottom: 5px;
+                margin-right: 20px;
+            }
+            .bar-text {
+                margin-right: 10px;
+                color: #0000;
+            }
+            .bar-fill {
+                background-color: #f4a742;
+                height: 20px;
+                text-align: center;
+                line-height: 20px;
+                color: black;
+            }
+            .informations {
+                display: flex;
+                flex-direction: column;
+            }
+            .newline {
+                clear: both;
+            }
+            .graph-wr {
+                background-color: #454545;
+                border: 1px solid #000;
+                float: left; 
+                width: 100%;
+                height: 800px;
+                position: relative;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>Homework Simulation</h2>
+        <div>
+            <label for="attackerNumber">Number of Attackers to simulate: </label>
+            <input type="number" id="attackerNumber" value="2" min="1" max ="20">
+            <label for="probability">Probability of success: </label>
+            <input type="number" id="probability" step="0.1" value="0.5" min="0" max ="1">
+            <button onclick="runSimulation()">Simulate</button>
+        </div>
+        <div class="graph-wr">
+            <canvas id="graph"></canvas>
+        </div>
+        <div id="histogram" class="histogram"></div>
+        <div class="newline"></div>
+        <p id="Avg"></p>
+        <p id="Var"></p>
+        <script>
+                //TODO: Remove horizontal lines in the graph, jump is a + or - sqrt(1/n).
+                const maxAttempt = 100;
+
+                const minimumGraphLines = 100;
+
+                const graph = document.getElementById('graph');
+                fitToContainer(graph);
+
+                let baseWidth = graph.width/5;
+
+                let Var = 0;
+                let Avg = 0;
+
+                
+                function fitToContainer(canvas){
+                canvas.style.width ='100%';
+                canvas.style.height='100%';
+                canvas.width  = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                }
+
+
+                //Using the "ricursive" functions, better to change this so a cycle at the end of it maybe
+                function calculateAverage(currentAvg, currentVar, count, newValue) {
+                    const delta = newValue - currentAvg;
+                    const newAvg = currentAvg + delta / count;
+                    const newVar = currentVar + delta * (newValue - newAvg);
+                    return { avg: newAvg, variance: newVar };
+                }
+
+                //Run before simulation to make sure that the graphs are empty
+                //maybe it's better to make the function take the graph that
+                //it needs to be cleared as argument so it can be called
+                //indipendently for each graph if it is necessary
+                function clearContext(){
+
+                    context = graph.getContext('2d');
+                    context.clearRect(0, 0, graph.width, graph.height);
+
+                }
+
+                function drawGrid(graph) {
+
+                    clearContext();
+
+                    let jumpHeight = graph.height / minimumGraphLines;
+
+                
+                    const context = graph.getContext('2d');
+                    let previousPos = 0;
+                    context.strokeStyle = '#cccccc';
+                    for (let i = 1; i <= maxAttempt; i++) {
+                        const stepWidth = baseWidth/i;
+                        context.beginPath();
+                        context.moveTo(previousPos+stepWidth, 0);
+                        context.lineTo(previousPos+stepWidth, graph.height);
+                        context.lineWidth = 0.5;
+                        context.stroke();
+                        previousPos = previousPos + stepWidth;
+                    }
+                }
+
+                function drawLine(x1, y1, x2, y2, color = 'black') {
+                    context.strokeStyle = color;
+                    context.beginPath();
+                    context.moveTo(x1, y1);
+                    context.lineTo(x2, y2);
+                    context.lineWidth = 3;
+                    context.stroke();
+                }
+
+                function getRandomColor() {
+                    const letters = '0123456789ABCDEF';
+                    let color = '#';
+                    for (let i = 0; i < 6; i++) {
+                        color += letters[Math.floor(Math.random() * 16)];
+                    }
+                    return color;
+                }      
+
+                function runSimulation(){
+                    
+                    const attackerNumber = parseInt(document.getElementById('attackerNumber').value);
+                    const penetrationProb = parseFloat(document.getElementById('probability').value);
+
+                    let maxSuccess = 5;
+                    drawGrid(graph);
+
+                    const jumpHeight = graph.height / minimumGraphLines;
+                    let penetrationResults = Array.from({lenght: attackerNumber}, () => []);
+
+                    const colors = [];
+                    
+                    avg = 0;
+                    variance = 0;
+
+                    for (let i = 0; i < attackerNumber; i++) {
+                        let x = 0;
+                        let y = graph.height/2;
+
+                        const Color = getRandomColor();
+                        colors.push(Color);
+
+                        let penetrations = 0;
+
+                        for(let j = 1; j <= maxAttempt; j++){
+                            
+                            const stepWidth = baseWidth/j;
+
+                            const penetrated = Math.random() < penetrationProb;
+                            const nX = x + stepWidth;
+                            let nY = y;
+
+                            if(penetrated){
+                                nY = y - jumpHeight-Math.sqrt(j);
+                                penetrations += 1;
+                            }else{
+                                nY = y + jumpHeight+Math.sqrt(j);
+                            }
+/*
+                            if(nY <= 0){
+                                nY = 0;
+    maybe not necessary     } 
+                            if(nY >= graph.height){
+                                nY = graph.height;
+                            }
+*/
+                            drawLine(x, y, nX, nY, Color);
+                            
+                            x = nX;
+                            y = nY;
+                        }
+                    }
+                }
+                
+                runSimulation();
+
+        </script>
+
+    </body>
+</html>
