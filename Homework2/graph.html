@@ -57,29 +57,24 @@
             <input type="number" id="penetrationProb" step="0.1" value="0.1" min = "0" max = 1>
             <label for="time">Time t to analyze: </label>
             <input type="number" id="time" value="5" min="1" max ="20">
-
+            <label for="type">Type of Simulation</label>
+            <select name="type" id="type">
+                <option value="1">Punishing Simulation</option>
+                <option value="2">Normalized Simulation</option>
+            </select>
             <button onclick="runSimulation()">Simulate</button>
         </div>
 
-        <canvas id="punishedGraph" class="graph" width="830" height="800"></canvas>
-        <div id="punishedHistogram" class="histogram"></div>
+        <canvas id="Graph" class="graph" width="830" height="800"></canvas>
+        <div id="Histogram" class="histogram"></div>
         <div class="newline"></div>
-        <p id="punishedAvg"></p>
-        <p id="punishedVar"></p>
-        <canvas id="normalizedGraph" class="graph" width="830" height="600"></canvas>
-        <div id="normalizedHistogram" class="histogram"></div>
-        <div class="newline"></div>
-        <p id="normalizedAvg"></p>
-        <p id="normalizedVar"></p>
+        <p id="Avg"></p>
+        <p id="Var"></p>
         <script>
-                const punishedGraph = document.getElementById('punishedGraph');
-                const normalizedGraph = document.getElementById('normalizedGraph');
+                const Graph = document.getElementById('Graph');
                 
-                let punishedAvg = 0;
-                let normalizedAvg = 0;
-
-                let punishedVar = 0;
-                let normalizedVar = 0;
+                let Avg = 0;
+                let Var = 0;
 
                 //Using the "ricursive" functions, better to change this so a cycle at the end of it maybe
                 function calculateAverage(currentAvg, currentVar, count, newValue) {
@@ -95,11 +90,9 @@
                 //indipendently for each graph if it is necessary
                 function clearContexts(){
 
-                    context = punishedGraph.getContext('2d');
-                    context.clearRect(0, 0, punishedGraph.width, punishedGraph.height);
+                    context = Graph.getContext('2d');
+                    context.clearRect(0, 0, Graph.width, Graph.height);
 
-                    context = normalizedGraph.getContext('2d');
-                    context.clearRect(0,0, normalizedGraph.width, normalizedGraph.height);
                 }
 
                 function drawGrid(graph, serverNumber, maxSuccess) {
@@ -144,11 +137,11 @@
                 return color;
                 }
 
-                function createHistogramPunished(data, colors) {
-                    const histogramDiv = document.getElementById('punishedHistogram');
+                function createHistogram(data) {
+                    const histogramDiv = document.getElementById('Histogram');
                     histogramDiv.innerHTML = '';
 
-                    data.forEach((level, id) => {
+                    data.forEach((level) => {
                         const bar = document.createElement('div');
                         bar.className = 'bar';
 
@@ -156,27 +149,7 @@
                         const barFill = document.createElement('div');
                         barFill.className = 'bar-fill';
                         barFill.style.width = `${level * 30}px`;
-                        barFill.style.backgroundColor = colors[id];
-                        barFill.innerText = level;
-
-                        bar.appendChild(barFill);
-                        histogramDiv.appendChild(bar);
-                    });
-                }
-
-                function createHistogramNormalized(data, colors) {
-                    const histogramDiv = document.getElementById('normalizedHistogram');
-                    histogramDiv.innerHTML = '';
-
-                    data.forEach((level, id) => {
-                        const bar = document.createElement('div');
-                        bar.className = 'bar';
-
-
-                        const barFill = document.createElement('div');
-                        barFill.className = 'bar-fill';
-                        barFill.style.width = `${level * 30}px`;
-                        barFill.style.backgroundColor = colors[id];
+                        barFill.style.backgroundColor = `green`;
                         barFill.innerText = level;
 
                         bar.appendChild(barFill);
@@ -193,22 +166,26 @@
                         let x = 0;
                         let y = graph.height/2;
 
+                        const ystep = graph.height/(serverNumber*2);
+                        const xstep = graph.width/serverNumber;
+
                         const Color = getRandomColor();
                         colors.push(Color);
 
-                        let penetrations = 0;
+                        let penetrations = serverNumber;
 
                         for (let j = 0; j < serverNumber; j++) {
                             const penetrated = Math.random() < penetrationProb;
-                            const nX = (j + 1) * stageWidth;
+                            const nX = (j + 1) * xstep;
                             let nY = y;
 
                             if (penetrated) {
-                                nY = y - stageHeight; 
+                                nY = y - ystep; 
                                 penetrations += 1;
                             }
                             else{
-                                nY = y + stageHeight;
+                                nY = y + ystep;
+                                penetrations -= 1;
                             }
 
                             drawLine(x, y, nX, nY, Color);
@@ -216,7 +193,7 @@
                             y = nY;
                         }
 
-                        penetrationResults[i] = penetrations;
+                        penetrationResults[penetrations] +=1;
 
                         const result = calculateAverage(avg, variance, i + 1, penetrations);
                         avg = result.avg;
@@ -233,6 +210,9 @@
                         let x = 0;
                         let y = graph.height;
 
+                        let xstep = graph.width/serverNumber;
+
+
                         const Color = getRandomColor();
                         colors.push(Color);
 
@@ -240,7 +220,8 @@
 
                         for (let j = 0; j < serverNumber; j++) {
                             const penetrated = Math.random() < penetrationProb;
-                            const nX = (j+1) * stageWidth;
+
+                            const nX = (j+1) * xstep;
 
                             let nY = y;
 
@@ -248,14 +229,14 @@
                                 penetrations += 1;
                             }
 
-                            nY = graph.height - graph.height*(penetrations/j);
+                            nY = graph.height - graph.height*(penetrations/(j+1));
 
                             drawLine(x, y, nX, nY, Color);
                             x = nX;
                             y = nY;
                         }
 
-                        penetrationResults[i] = penetrations;
+                        penetrationResults[penetrations] += 1;
 
                         const result = calculateAverage(avg, variance, i + 1, penetrations);
                         avg = result.avg;
@@ -264,45 +245,78 @@
                 }
 
                 function runSimulation() {
+                    const homeworkN = parseInt(document.getElementById('type').value);
+                    switch(homeworkN){
+                        case 1:
+                            runSimulation1();
+                            break;
+                        case 2:
+                            runSimulation2();
+                            break;
+                        default:
+                            break;
+                        }
+
+                }
+                function runSimulation1(){
+
                     const serverNumber = parseInt(document.getElementById('serverNumber').value);
                     const attackerNumber = parseInt(document.getElementById('attackerNumber').value);
                     const penetrationProb = parseFloat(document.getElementById('penetrationProb').value);
                     
                     clearContexts();
 
-                    drawGrid(punishedGraph, serverNumber, 2*serverNumber);
-                    drawGrid(normalizedGraph, serverNumber, serverNumber);
-                    
-                    
-                    const serverWidth = punishedGraph.width / serverNumber;
-                    const punishedHeight = punishedGraph.height / serverNumber;
-                    const normalizedHeight = normalizedGraph.height / serverNumber;
+                    drawGrid(Graph, serverNumber, 2*serverNumber);
 
-                    let penetrationResultsPunished = Array.from({ length: attackerNumber }, () => []);
-                    let penetrationResultsNormalized = Array.from({ length: attackerNumber }, () => []);
+                    const Width = Graph.width / serverNumber;
+                    const Height = Graph.height / serverNumber;
+
+                    let penetrationResultsPunished = Array.from({ length: serverNumber*2+1 }, () => []);
+                    penetrationResultsPunished.fill(0);
 
                     const colors = [];
 
                     avg = 0;
                     variance = 0; 
                     
-                    drawResultPunished(penetrationResultsPunished, penetrationProb, punishedGraph, serverWidth, punishedHeight, colors, serverNumber, attackerNumber);
+                    drawResultPunished(penetrationResultsPunished, penetrationProb, Graph, Width, Height, colors, serverNumber, attackerNumber);
 
                     variance = variance / attackerNumber;                    
-                    document.getElementById('punishedAvg').textContent = `Average compromised systems: ${avg.toFixed(2)}`;
-                    document.getElementById('punishedVar').textContent = `Variance: ${variance.toFixed(2)}`;
+                    document.getElementById('Avg').textContent = `Average compromised systems: ${avg.toFixed(2)}`;
+                    document.getElementById('Var').textContent = `Variance: ${variance.toFixed(2)}`;
+                
+                    penetrationResultsPunished.reverse();
+                    createHistogram(penetrationResultsPunished);
+                }
+
+                function runSimulation2(){
+                    const serverNumber = parseInt(document.getElementById('serverNumber').value);
+                    const attackerNumber = parseInt(document.getElementById('attackerNumber').value);
+                    const penetrationProb = parseFloat(document.getElementById('penetrationProb').value);
+
+                    clearContexts();
+
+                    drawGrid(Graph, serverNumber, serverNumber);
+
+                    const Width = Graph.width / serverNumber;
+                    const Height = Graph.height / serverNumber;
+
+                    let penetrationResultsNormalized = Array.from({ length: serverNumber+1 }, () => []);
+                    penetrationResultsNormalized.fill(0);
+
+                    const colors = [];
 
                     avg = 0;
                     variance = 0; 
 
-                    drawResultNormalized(penetrationResultsNormalized, penetrationProb, normalizedGraph, serverWidth, normalizedHeight, colors, serverNumber, attackerNumber);
+                    drawResultNormalized(penetrationResultsNormalized, penetrationProb, Graph, Width, Height, colors, serverNumber, attackerNumber);
 
                     variance = variance / attackerNumber;                    
-                    document.getElementById('normalizedAvg').textContent = `Average compromised systems: ${avg.toFixed(2)}`;
-                    document.getElementById('normalizedVar').textContent = `Variance: ${variance.toFixed(2)}`;
+                    document.getElementById('Avg').textContent = `Average compromised systems: ${avg.toFixed(2)}`;
+                    document.getElementById('Var').textContent = `Variance: ${variance.toFixed(2)}`;
 
-                    createHistogramPunished(penetrationResultsPunished, colors);
-                    createHistogramNormalized(penetrationResultsNormalized, colors);
+                    penetrationResultsNormalized.reverse();
+                    createHistogram(penetrationResultsNormalized, colors);
 
                 }
 

@@ -59,7 +59,7 @@
         </div>
 
         <canvas id="graph" width="830" height="600"></canvas>
-        <div id="histogram" class="histogram"></div>
+        <div id="histogram" class="histogram" height="600"></div>
         <div class="newline"></div>
         <p id="avg"></p>
         <p id="variance"></p>
@@ -127,14 +127,15 @@
 
                     const serverWidth = graph.width / serverNumber;
                     const attackerHeight = graph.height / serverNumber;
-                    let penetrationResults = Array.from({ length: attackerNumber }, () => []);
+                    let penetrationResults = Array.from({ length: serverNumber+1 }, () => []);
+                    penetrationResults.fill(0);
 
                     const colors = [];
 
                     avg = 0;
                     variance = 0; 
 
-                    for (let i = 0; i < serverNumber; i++) {
+                    for (let i = 0; i < attackerNumber; i++) {
                         let x = 0;
                         let y = graph.height;
 
@@ -143,22 +144,24 @@
 
                         let penetrations = 0;
 
+
                         for (let j = 0; j < serverNumber; j++) {
                             const penetrated = Math.random() < penetrationProb;
                             const nX = (j + 1) * serverWidth;
                             let nY = y;
 
                             if (penetrated) {
-                                nY = y - attackerHeight; 
+                                nY = y - attackerHeight;
                                 penetrations += 1;
                             }
 
                             drawLine(x, y, nX, nY, Color);
                             x = nX;
                             y = nY;
+
                         }
 
-                        penetrationResults[i] = penetrations;
+                        penetrationResults[penetrations] += 1;
 
                         const result = calculateAverage(avg, variance, i + 1, penetrations);
                         avg = result.avg;
@@ -172,11 +175,12 @@
                     document.getElementById('avg').textContent = `Average compromised systems: ${avg.toFixed(2)}`;
                     document.getElementById('variance').textContent = `Variance: ${variance.toFixed(2)}`;
                     }
+
                     function createHistogram(data, colors) {
                     const histogramDiv = document.getElementById('histogram');
                     histogramDiv.innerHTML = '';
 
-                    data.forEach((level, id) => {
+                    data.forEach((level) => {
                         const bar = document.createElement('div');
                         bar.className = 'bar';
 
@@ -184,7 +188,7 @@
                         const barFill = document.createElement('div');
                         barFill.className = 'bar-fill';
                         barFill.style.width = `${level * 30}px`;
-                        barFill.style.backgroundColor = colors[id];
+                        barFill.style.backgroundColor = `green`;
                         barFill.innerText = level;
 
                         bar.appendChild(barFill);
